@@ -1,0 +1,29 @@
+---
+- name: Patch management
+  hosts: all
+  become: true
+  tasks:
+  - name: Update package index
+    apt:
+      update_cache: yes
+      
+  - name: Upgrade all packages
+    apt:
+      upgrade: dist
+      
+  - name: Reboot the server
+    reboot:
+    when: ansible_facts['distribution'] == 'Ubuntu'
+    connect_timeout: 600
+    reboot_timeout: 600
+    
+  - name: Wait for server to come back up
+    wait_for:
+      port: 22
+      timeout: 300
+      
+  - name: Check that all services are running
+    shell: systemctl list-units --type=service | grep running
+    register: services_status
+    failed_when: "'running' not in services_status.stdout"
+    changed_when: false
